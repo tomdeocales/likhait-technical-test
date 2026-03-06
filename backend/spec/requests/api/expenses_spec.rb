@@ -23,6 +23,19 @@ RSpec.describe "Api::Expenses", type: :request do
       expect(json.first["id"]).to eq(expense2.id)
       expect(json.last["id"]).to eq(expense1.id)
     end
+
+    it "orders by created_at as tiebreaker when dates are equal" do
+      expense3 = Expense.create!(description: "Same Day 1", amount: 75.00, category: food_category, date: Date.today)
+      expense4 = Expense.create!(description: "Same Day 2", amount: 80.00, category: food_category, date: Date.today)
+
+      get "/api/expenses"
+
+      json = JSON.parse(response.body)
+      # expense4 created last should appear first among same-date expenses
+      same_date_expenses = json.find_all { |e| e["date"] == Date.today.to_s }
+      expect(same_date_expenses.first["id"]).to eq(expense4.id)
+      expect(same_date_expenses[1]["id"]).to eq(expense3.id)
+    end
   end
 
   describe "POST /api/expenses" do
